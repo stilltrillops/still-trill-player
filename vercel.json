@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "api/render.js": {
+      "includeFiles": "player.html"
+    }
+  },
+  "rewrites": [
+    { "source": "/", "destination": "/api/render?slug=home" },
+    { "source": "/:slug", "destination": "/api/render?slug=:slug" }
+  ]
+}
