@@ -5,20 +5,24 @@ const AIRTABLE_BASE = process.env.AIRTABLE_BASE_ID;
 const AIRTABLE_TABLE = process.env.AIRTABLE_TABLE || "Orders";
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 
-// Parse Gemini's lyrics_json into the player's array-of-line-arrays shape,
-// and pull the song title. Fails safe: bad/empty JSON -> empty lyrics, null title.
-function parseSong(jsonStr) {
-  if (!jsonStr) return { title: null, lines: [] };
+// Gemini returns ONE JSON envelope containing song_a + song_b. We store that raw
+// envelope text in lyrics_json_a (lyrics_json_b is vestigial). parseJsonSafe parses
+// it; extractSong pulls one song's title + array-of-line-arrays. Fails safe: bad/
+// empty JSON -> empty lyrics, null title. Tolerant of the legacy per-song shape too.
+function parseJsonSafe(jsonStr) {
+  if (!jsonStr) return null;
   try {
-    const obj = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
-    // lyrics_json_a is stored as the per-song object (song_a). Be tolerant of either shape.
-    const song = obj.song_a || obj.song_b || obj;
-    const sections = Array.isArray(song.sections) ? song.sections : [];
-    const lines = sections.map(s => Array.isArray(s.lines) ? s.lines : []);
-    return { title: song.title || null, lines };
+    return typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
   } catch (e) {
-    return { title: null, lines: [] };
+    return null;
   }
+}
+
+function extractSong(song) {
+  if (!song || typeof song !== "object") return { title: null, lines: [] };
+  const sections = Array.isArray(song.sections) ? song.sections : [];
+  const lines = sections.map(s => Array.isArray(s.lines) ? s.lines : []);
+  return { title: song.title || null, lines };
 }
 
 function firstAttachmentUrl(field) {
@@ -38,7 +42,6 @@ function htmlEscapeAttr(s) {
 
 module.exports = async (req, res) => {
   const slug = (req.query && req.query.slug ? String(req.query.slug) : "").trim();
-
   if (!slug || !/^[a-f0-9]{8,32}$/.test(slug)) {
     res.status(404).send("Not found");
     return;
@@ -47,7 +50,6 @@ module.exports = async (req, res) => {
     res.status(500).send("Server not configured");
     return;
   }
-
   try {
     const formula = encodeURIComponent(`{player_slug}="${slug}"`);
     const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${encodeURIComponent(AIRTABLE_TABLE)}?filterByFormula=${formula}&maxRecords=1`;
@@ -58,12 +60,15 @@ module.exports = async (req, res) => {
     if (!rec) { res.status(404).send("Not found"); return; }
     const f = rec.fields || {};
 
-    const songA = parseSong(f.lyrics_json_a);
-    const songB = parseSong(f.lyrics_json_b);
+    // lyrics_json_a holds Gemini's full envelope { song_a, song_b, ... }.
+    // Tolerant of the legacy shape (a song object stored directly in each field).
+    const envA = parseJsonSafe(f.lyrics_json_a) || {};
+    const envB = parseJsonSafe(f.lyrics_json_b) || {};
+    const songA = extractSong(envA.song_a || envA);
+    const songB = extractSong(envA.song_b || envB.song_b || envB);
 
     const chosen = f.customer_chosen_version || "Pending";
     const view = chosen === "Pending" ? "gifter" : "recipient";
-
     const order = {
       sendTo: f.recipient_name || "",
       sender: f.gifter_name || "",
@@ -79,16 +84,12 @@ module.exports = async (req, res) => {
       mp3B: firstAttachmentUrl(f.suno_mp3_b),
       chosenVersion: chosen
     };
-
     // Open Graph: per-order preview when shared via link
     const ogTitle = order.sendTo ? `A song for ${order.sendTo}` : "still trill";
     const ogDesc = "Not a love song. Proof.";
     const ogImage = order.coverUrl || "";
-
     let html = fs.readFileSync(path.join(process.cwd(), "player.html"), "utf8");
-
     const orderJson = JSON.stringify(order).replace(/</g, "\\u003c");
-
     html = html
       .split("%%ORDER_JSON%%").join(orderJson)
       .split("%%VIEW%%").join(view)
@@ -96,7 +97,6 @@ module.exports = async (req, res) => {
       .split("%%OG_TITLE%%").join(htmlEscapeAttr(ogTitle))
       .split("%%OG_DESC%%").join(htmlEscapeAttr(ogDesc))
       .split("%%OG_IMAGE%%").join(htmlEscapeAttr(ogImage));
-
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "no-store");
     res.status(200).send(html);
