@@ -94,8 +94,22 @@
   }
   .preview-toggle:hover { background: var(--coral-deep); border-color: var(--coral-deep); }
 
-  .immersive-bottom { position: absolute; bottom: 0; left: 0; right: 0; padding: 0 20px; z-index: 10; color: white; }
+  .immersive-bottom {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 22px 18px calc(10px + env(safe-area-inset-bottom, 0px));
+    z-index: 10; color: white;
+    background: linear-gradient(to top, rgba(8,6,5,0.97) 0%, rgba(8,6,5,0.92) 60%, rgba(8,6,5,0.6) 84%, rgba(8,6,5,0) 100%);
+  }
 
+  #gifter-controls {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 16px;
+    padding: 13px 13px 12px;
+    margin-bottom: 14px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  #gifter-controls .pills { margin-bottom: 0; }
   .choose-prompt { text-align: center; margin-bottom: 12px; }
   .choose-prompt-eyebrow {
     font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
@@ -146,7 +160,7 @@
   .song-title {
     font-family: var(--sans); font-weight: 800; color: white;
     text-transform: lowercase; letter-spacing: -0.05em; line-height: 0.85;
-    margin: 0 0 8px 0; margin-right: -10px;
+    margin: 0 0 8px 0;
   }
   .mode-recipient .song-title { font-size: 56px; }
   .mode-gifter .song-title { font-size: 32px; margin-right: 0; }
@@ -220,6 +234,10 @@
   /* Send is the most important action — yellow so it breaks from all the coral */
   #send-btn { background: var(--yellow); color: var(--ink); border-color: var(--yellow); box-shadow: 0 3px 16px rgba(255,210,63,0.42); }
   #send-btn:hover { background: #EFC02A; border-color: #EFC02A; }
+  /* Send is the dominant action — full width, with Copy link quiet beneath it */
+  #gifter-share { display: block; }
+  #gifter-share #send-btn { width: 100%; padding: 17px 16px; font-size: 13px; }
+  #gifter-share #copy-btn { width: 100%; margin-top: 8px; background: transparent; border-color: rgba(244,236,217,0.16); color: rgba(244,236,217,0.7); }
   .share-btn:disabled { opacity: 0.6; cursor: default; }
 
   .send-warning { text-align: center; font-size: 11px; color: rgba(244,236,217,0.55); margin: 0; line-height: 1.5; font-style: italic; font-family: var(--sans); }
