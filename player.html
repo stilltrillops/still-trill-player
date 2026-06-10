@@ -102,6 +102,19 @@
     color: var(--yellow); margin: 0 0 4px 0; font-weight: 700;
   }
   .choose-prompt-text { font-family: var(--sans); font-size: 14px; font-style: italic; color: white; margin: 0; }
+  .choose-steps {
+    list-style: none; counter-reset: step; margin: 4px 0 0; padding: 0;
+    display: inline-block; text-align: left;
+  }
+  .choose-steps li {
+    counter-increment: step; position: relative; padding-left: 22px; margin: 0 0 3px;
+    font-family: var(--sans); font-size: 13px; line-height: 1.35; color: rgba(255,255,255,0.92);
+  }
+  .choose-steps li:last-child { margin-bottom: 0; }
+  .choose-steps li::before {
+    content: counter(step) "."; position: absolute; left: 0; top: 0;
+    font-weight: 800; color: var(--yellow);
+  }
 
   .pills {
     display: flex; gap: 6px; margin-bottom: 14px;
@@ -112,20 +125,28 @@
   .pill {
     flex: 1; padding: 10px 12px; border-radius: 9px;
     border: 1px solid rgba(255,255,255,0.20);
-    background: rgba(255,255,255,0.08); cursor: pointer; text-align: left; font-family: inherit;
+    background: rgba(255,255,255,0.08); cursor: pointer; font-family: inherit;
     color: rgba(255,255,255,0.85); transition: all 0.18s ease;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
   }
   .pill.active {
     background: var(--coral); color: #fff; border-color: var(--coral);
     box-shadow: 0 2px 12px rgba(200,48,44,0.45);
   }
-  .pill-label { display: block; font-size: 12px; font-weight: 700; letter-spacing: -0.02em; text-transform: lowercase; }
+  .pill-label { font-size: 12px; font-weight: 700; letter-spacing: -0.02em; text-transform: lowercase; }
+  .pill-check { opacity: 0; font-size: 12px; font-weight: 800; flex-shrink: 0; transition: opacity 0.18s ease; }
+  .pill.active .pill-check { opacity: 1; }
+
+  /* Send confirmation — names the chosen version right above Send (gifter clarity) */
+  .send-confirm { display: flex; align-items: center; justify-content: center; gap: 9px; flex-wrap: wrap; margin: 0 0 12px; }
+  .send-confirm-eyebrow { font-family: var(--sans); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(244,236,217,0.6); font-weight: 600; }
+  .send-confirm-version { font-family: var(--sans); font-size: 12px; font-weight: 700; text-transform: lowercase; color: #fff; background: var(--coral); padding: 5px 13px; border-radius: 100px; box-shadow: 0 2px 10px rgba(200,48,44,0.40); }
 
   .song-block { margin-bottom: 12px; overflow: hidden; }
   .song-title {
     font-family: var(--sans); font-weight: 800; color: white;
     text-transform: lowercase; letter-spacing: -0.05em; line-height: 0.85;
-    margin: 0 0 8px 0; margin-left: -3px; margin-right: -10px;
+    margin: 0 0 8px 0; margin-right: -10px;
   }
   .mode-recipient .song-title { font-size: 56px; }
   .mode-gifter .song-title { font-size: 32px; margin-right: 0; }
@@ -145,7 +166,8 @@
   .mode-recipient .song-meta-right { display: none; }
 
   .scrub-row { margin-top: 12px; margin-bottom: 6px; }
-  .scrub { height: 3px; background: rgba(255,255,255,0.25); border-radius: 2px; position: relative; cursor: pointer; }
+  .scrub { height: 3px; background: rgba(255,255,255,0.25); border-radius: 2px; position: relative; cursor: pointer; touch-action: none; }
+  .scrub::before { content: ""; position: absolute; left: 0; right: 0; top: -12px; bottom: -12px; }
   .scrub-fill { height: 100%; background: white; border-radius: 2px; width: 0%; }
   .scrub-thumb { position: absolute; left: 0%; top: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; border-radius: 50%; background: white; }
   .time-row {
@@ -195,6 +217,9 @@
   .share-btn:hover { background: rgba(255,255,255,0.12); }
   .share-btn.primary { background: var(--coral); color: var(--base); border-color: var(--coral); }
   .share-btn.primary:hover { background: var(--coral-deep); border-color: var(--coral-deep); }
+  /* Send is the most important action — yellow so it breaks from all the coral */
+  #send-btn { background: var(--yellow); color: var(--ink); border-color: var(--yellow); box-shadow: 0 3px 16px rgba(255,210,63,0.42); }
+  #send-btn:hover { background: #EFC02A; border-color: #EFC02A; }
   .share-btn:disabled { opacity: 0.6; cursor: default; }
 
   .send-warning { text-align: center; font-size: 11px; color: rgba(244,236,217,0.55); margin: 0; line-height: 1.5; font-style: italic; font-family: var(--sans); }
@@ -243,14 +268,19 @@
           <div id="gifter-controls">
             <div class="choose-prompt">
               <p class="choose-prompt-eyebrow">Choose one</p>
-              <p class="choose-prompt-text">Pick the version you want to send.</p>
+              <ol class="choose-steps">
+                <li>Tap each genre to hear it</li>
+                <li>Scroll to the bottom &amp; tap &ldquo;Send to Theo&rdquo; to send your pick</li>
+              </ol>
             </div>
             <div class="pills">
               <button class="pill active" id="pill-a" data-version="a">
                 <span class="pill-label" id="pill-a-label">version a</span>
+                <span class="pill-check" aria-hidden="true">&#10003;</span>
               </button>
               <button class="pill" id="pill-b" data-version="b">
                 <span class="pill-label" id="pill-b-label">version b</span>
+                <span class="pill-check" aria-hidden="true">&#10003;</span>
               </button>
             </div>
           </div>
@@ -310,6 +340,11 @@
           </div>
           <textarea class="gifter-note-textarea" id="note-input" maxlength="200" placeholder="A line or two — the kind of thing you'd write inside a card."></textarea>
           <p class="gifter-note-hint">Two-line max. This will be shown alongside the song.</p>
+        </div>
+
+        <div id="send-confirm" class="send-confirm">
+          <span class="send-confirm-eyebrow">You're sending</span>
+          <span class="send-confirm-version" id="send-confirm-version">version a</span>
         </div>
 
         <div id="gifter-share" class="share-row">
@@ -401,8 +436,15 @@ window.__SLUG__ = "%%SLUG%%";
     if (src && audio.getAttribute("src") !== src) {
       audio.setAttribute("src", src);
       audio.load();
+      resetScrub();
     }
     setPlayIcon(false);
+  }
+  function resetScrub() {
+    document.getElementById("scrub-fill").style.width = "0%";
+    document.getElementById("scrub-thumb").style.left = "0%";
+    document.getElementById("time-cur").textContent = "0:00";
+    document.getElementById("time-rem").textContent = "-0:00";
   }
 
   function setPlayIcon(playing) {
@@ -428,6 +470,7 @@ window.__SLUG__ = "%%SLUG%%";
     document.getElementById("song-meta-right").textContent = (genreFor(currentVersion) || "");
     document.getElementById("preview-name").textContent = sendTo;
     document.getElementById("pill-a-label").textContent = (order.genreA || "version a");
+    document.getElementById("send-confirm-version").textContent = (genreFor(currentVersion) || "this version");
     document.getElementById("pill-b-label").textContent = (order.genreB || "version b");
     document.getElementById("send-recipient").textContent = sendTo;
     document.getElementById("note-recipient").textContent = sendTo;
@@ -457,9 +500,10 @@ window.__SLUG__ = "%%SLUG%%";
     var noteText = isGifter ? "" : (isPreview ? document.getElementById("note-input").value : (order.note || ""));
     document.getElementById("recipient-note-card").classList.toggle("hidden", isGifter || noteText.trim() === "");
     document.getElementById("gifter-share").classList.toggle("hidden", !isGifter);
+    document.getElementById("send-confirm").classList.toggle("hidden", !isGifter);
     document.getElementById("gifter-warning").classList.toggle("hidden", !isGifter);
     document.getElementById("gifter-support").classList.toggle("hidden", !isGifter);
-    document.getElementById("recipient-share").classList.toggle("hidden", isGifter);
+    document.getElementById("recipient-share").classList.toggle("hidden", isGifter || isPreview);
     document.getElementById("preview-back").classList.toggle("hidden", !isPreview);
   }
 
@@ -509,11 +553,36 @@ window.__SLUG__ = "%%SLUG%%";
     document.getElementById("time-cur").textContent = fmt(audio.currentTime);
     document.getElementById("time-rem").textContent = "-" + fmt(d - audio.currentTime);
   });
-  document.getElementById("scrub").addEventListener("click", function (e) {
-    var d = audio.duration; if (!d) return;
-    var rect = this.getBoundingClientRect();
-    audio.currentTime = ((e.clientX - rect.left) / rect.width) * d;
+  audio.addEventListener("loadedmetadata", function () {
+    document.getElementById("time-rem").textContent = "-" + fmt(audio.duration || 0);
   });
+  (function () {
+    var scrub = document.getElementById("scrub");
+    var dragging = false;
+    function seekFrac(clientX) {
+      var d = audio.duration; if (!d) return;
+      var rect = scrub.getBoundingClientRect();
+      var frac = (clientX - rect.left) / rect.width;
+      frac = Math.max(0, Math.min(1, frac));
+      audio.currentTime = frac * d;
+      document.getElementById("scrub-fill").style.width = (frac * 100) + "%";
+      document.getElementById("scrub-thumb").style.left = (frac * 100) + "%";
+      document.getElementById("time-cur").textContent = fmt(frac * d);
+      document.getElementById("time-rem").textContent = "-" + fmt(d - frac * d);
+    }
+    scrub.addEventListener("pointerdown", function (e) {
+      if (!audio.duration) return;
+      dragging = true;
+      try { scrub.setPointerCapture(e.pointerId); } catch (x) {}
+      seekFrac(e.clientX);
+    });
+    scrub.addEventListener("pointermove", function (e) { if (dragging) seekFrac(e.clientX); });
+    scrub.addEventListener("pointerup", function (e) {
+      dragging = false;
+      try { scrub.releasePointerCapture(e.pointerId); } catch (x) {}
+    });
+    scrub.addEventListener("pointercancel", function () { dragging = false; });
+  })();
   document.getElementById("back15").addEventListener("click", function () { audio.currentTime = Math.max(0, audio.currentTime - 15); });
   document.getElementById("fwd15").addEventListener("click", function () { if (audio.duration) audio.currentTime = Math.min(audio.duration, audio.currentTime + 15); });
 
