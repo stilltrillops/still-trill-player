@@ -36,21 +36,21 @@
     -webkit-font-smoothing: antialiased; min-height: 100vh;
   }
 
-  /* STAGE — desktop presentation; on phone the frame fills the screen */
+  /* STAGE — full-bleed container (mockup framing retired Session 15, F49) */
   .stage {
     min-height: 100vh;
-    display: flex; align-items: flex-start; justify-content: center;
-    padding: 40px 20px 60px;
-    background: linear-gradient(135deg, #4A1B0C 0%, #8E3625 50%, #C8503B 100%);
-    transition: background 0.6s ease;
+    min-height: 100dvh;
+    padding: 0;
+    background: #0a0807;
     position: relative;
   }
 
-  /* PHONE FRAME */
+  /* PHONE — now the full-viewport positioning context for .page-scroll (kept, not deleted) */
   .phone {
-    width: 390px; height: 844px; border-radius: 48px;
-    background: #000; overflow: hidden; position: relative;
-    box-shadow: 0 0 0 8px rgba(20, 18, 16, 0.85), 0 30px 80px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3);
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    background: #0a0807; overflow: hidden; position: relative;
   }
 
   /* SCROLLABLE INNER PAGE */
@@ -62,7 +62,7 @@
   .page-scroll::-webkit-scrollbar { width: 0; }
 
   /* IMMERSIVE FIRST VIEWPORT */
-  .immersive { position: relative; width: 100%; height: 844px; overflow: hidden; }
+  .immersive { position: relative; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; }
   .bg-art { position: absolute; inset: 0; }
   .bg-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .bg-overlay {
@@ -71,7 +71,7 @@
   }
 
   .top-nav {
-    position: absolute; top: 56px; left: 0; right: 0;
+    position: absolute; top: max(22px, env(safe-area-inset-top, 0px)); left: 0; right: 0;
     display: flex; justify-content: space-between; align-items: flex-start;
     padding: 0 20px; z-index: 10; color: white;
   }
@@ -86,20 +86,20 @@
   .top-wordmark-stacked .stacked-line.italic { font-style: italic; }
   .preview-toggle {
     margin-left: auto;
-    background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2);
-    color: white; padding: 6px 12px; border-radius: 100px;
-    font-family: var(--sans); font-size: 11px; letter-spacing: 0.04em; font-weight: 500;
-    cursor: pointer; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    background: var(--coral); border: 1px solid var(--coral);
+    color: #fff; padding: 6px 12px; border-radius: 100px;
+    font-family: var(--sans); font-size: 11px; letter-spacing: 0.04em; font-weight: 600;
+    cursor: pointer; box-shadow: 0 2px 10px rgba(200,48,44,0.40);
     transition: all 0.15s ease;
   }
-  .preview-toggle:hover { background: rgba(0,0,0,0.6); }
+  .preview-toggle:hover { background: var(--coral-deep); border-color: var(--coral-deep); }
 
   .immersive-bottom { position: absolute; bottom: 0; left: 0; right: 0; padding: 0 20px; z-index: 10; color: white; }
 
   .choose-prompt { text-align: center; margin-bottom: 12px; }
   .choose-prompt-eyebrow {
     font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
-    color: rgba(255,255,255,0.7); margin: 0 0 4px 0; font-weight: 500;
+    color: var(--yellow); margin: 0 0 4px 0; font-weight: 700;
   }
   .choose-prompt-text { font-family: var(--sans); font-size: 14px; font-style: italic; color: white; margin: 0; }
 
@@ -107,14 +107,19 @@
     display: flex; gap: 6px; margin-bottom: 14px;
     background: rgba(0,0,0,0.4); padding: 4px; border-radius: 12px;
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 0 0 1px rgba(200,48,44,0.45);
   }
   .pill {
-    flex: 1; padding: 10px 12px; border-radius: 9px; border: none;
-    background: transparent; cursor: pointer; text-align: left; font-family: inherit;
-    color: rgba(255,255,255,0.65); transition: all 0.18s ease;
+    flex: 1; padding: 10px 12px; border-radius: 9px;
+    border: 1px solid rgba(255,255,255,0.20);
+    background: rgba(255,255,255,0.08); cursor: pointer; text-align: left; font-family: inherit;
+    color: rgba(255,255,255,0.85); transition: all 0.18s ease;
   }
-  .pill.active { background: rgba(255,255,255,0.18); color: white; }
-  .pill-label { display: block; font-size: 12px; font-weight: 600; letter-spacing: -0.02em; text-transform: lowercase; }
+  .pill.active {
+    background: var(--coral); color: #fff; border-color: var(--coral);
+    box-shadow: 0 2px 12px rgba(200,48,44,0.45);
+  }
+  .pill-label { display: block; font-size: 12px; font-weight: 700; letter-spacing: -0.02em; text-transform: lowercase; }
 
   .song-block { margin-bottom: 12px; overflow: hidden; }
   .song-title {
@@ -123,7 +128,7 @@
     margin: 0 0 8px 0; margin-left: -3px; margin-right: -10px;
   }
   .mode-recipient .song-title { font-size: 56px; }
-  .mode-gifter .song-title { font-size: 32px; }
+  .mode-gifter .song-title { font-size: 32px; margin-right: 0; }
 
   .song-meta-row {
     display: flex; justify-content: space-between; align-items: flex-end;
@@ -178,7 +183,7 @@
 
   .gifter-note { background: rgba(255,255,255,0.04); border: 1px dashed rgba(244,236,217,0.2); border-radius: 12px; padding: 18px 20px; margin: 28px 0 24px; }
   .gifter-note-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
-  .gifter-note-label { font-family: var(--sans); font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: rgba(244,236,217,0.65); margin: 0; font-weight: 600; }
+  .gifter-note-label { font-family: var(--sans); font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--yellow); margin: 0; font-weight: 700; }
   .gifter-note-counter { font-size: 10px; color: rgba(244,236,217,0.55); font-variant-numeric: tabular-nums; font-family: var(--sans); letter-spacing: 0.04em; }
   .gifter-note-counter.warn { color: var(--yellow); }
   .gifter-note-textarea { width: 100%; min-height: 60px; border: none; background: transparent; font-family: var(--sans); font-style: italic; font-size: 16px; line-height: 1.5; color: var(--base); resize: none; outline: none; font-weight: 400; }
@@ -208,11 +213,8 @@
 
   .hidden { display: none !important; }
 
-  @media (max-width: 480px) {
-    .stage { padding: 0; min-height: 100vh; align-items: stretch; }
-    .phone { width: 100vw; height: 100vh; max-height: 100vh; border-radius: 0; box-shadow: none; }
-    .immersive { height: 100vh; }
-  }
+  /* Full-bleed is now the base behavior on every width (Session 15, F49) —
+     the former @media (max-width:480px) override is no longer needed. */
 </style>
 </head>
 <body class="brand-espresso">
