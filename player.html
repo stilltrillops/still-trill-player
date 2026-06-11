@@ -619,34 +619,12 @@ window.__SLUG__ = "%%SLUG%%";
       }).then(function (r) {
         // 409 = the gift was already sent/locked — that's a success state, not an error.
         if (!r.ok && r.status !== 409) throw new Error("send_failed");
-        // Past this point the write has landed (or was already locked). Nothing below
-        // may surface a failure alert — flipping the view and sharing are best-effort.
-        try {
-          order.note = note;
-          order.chosenVersion = versionUpper;
-          currentView = "recipient";
-          currentVersion = versionUpper === "B" ? "b" : "a";
-          update();
-          applyView();
-          // After the in-place flip, land the recipient at the very top (cover + title),
-          // and force iOS Safari to repaint the freshly-built lyrics — which otherwise
-          // stay blank until a manual scroll because the flip happens in a scrolled container.
-          var sc = document.querySelector(".page-scroll");
-          if (sc) {
-            requestAnimationFrame(function () {
-              sc.scrollTop = 0;
-              var ly = document.getElementById("lyrics-content");
-              if (ly) { ly.style.opacity = "0.999"; requestAnimationFrame(function () { ly.style.opacity = ""; }); }
-            });
-          }
-        } catch (uiErr) {
-          // Write succeeded; if a render line throws, reload into the locked recipient view.
-          window.location.reload();
-          return;
-        }
-        // doShare() can throw synchronously on iOS when the tap's activation has expired
-        // after the network round-trip — isolate it so it can never error the send.
-        try { doShare(); } catch (shareErr) {}
+        // The write has landed (or was already locked). Reload into the server-rendered
+        // locked recipient view — guaranteed correct (top-aligned, lyrics painted, note
+        // card, Share button). This avoids the iOS in-place-flip scroll/repaint issues
+        // entirely. Native auto-share doesn't fire post-fetch on iOS anyway; the recipient
+        // view's Share button is a fresh user gesture and works on every device.
+        window.location.reload();
       }).catch(function () {
         // Only a genuine network failure or rejected write reaches here.
         sendBtn.disabled = false;
