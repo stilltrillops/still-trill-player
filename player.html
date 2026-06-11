@@ -254,6 +254,19 @@
   .footer-wordmark { text-align: center; padding: 32px 0 8px; font-family: var(--sans); font-weight: 800; font-size: 14px; color: rgba(244,236,217,0.4); letter-spacing: -0.02em; text-transform: lowercase; }
   .footer-wordmark .italic { font-style: italic; }
 
+  /* LOCK-CONFIRM CUE — gifter post-lock, tap to scroll to the send button (yellow = cue, D115) */
+  .lock-confirm {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; margin: 0 0 16px; padding: 13px 16px;
+    background: var(--yellow); color: var(--ink); border: none; border-radius: 12px;
+    font-family: var(--sans); font-size: 13px; font-weight: 700;
+    letter-spacing: 0.01em; text-transform: lowercase; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.40);
+  }
+  .lock-confirm-arrow { display: inline-flex; animation: lc-bounce 1.3s ease-in-out infinite; }
+  @keyframes lc-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+  @media (prefers-reduced-motion: reduce) { .lock-confirm-arrow { animation: none; } }
+
   .hidden { display: none !important; }
 
   /* Full-bleed is now the base behavior on every width (Session 15, F49) —
@@ -288,7 +301,7 @@
               <p class="choose-prompt-eyebrow">Choose one</p>
               <ol class="choose-steps">
                 <li>Tap each genre to hear it</li>
-                <li>Scroll to the bottom &amp; tap &ldquo;Send to Theo&rdquo; to send your pick</li>
+                <li>Scroll to the bottom &amp; tap &ldquo;lock in this version&rdquo;</li>
               </ol>
             </div>
             <div class="pills">
@@ -302,6 +315,13 @@
               </button>
             </div>
           </div>
+
+          <button id="lock-confirm" class="lock-confirm hidden" type="button">
+            <span class="lock-confirm-line">locked in. now send <span id="lock-confirm-name">theo</span> the link</span>
+            <span class="lock-confirm-arrow" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v9M3 7l4 4 4-4"/></svg>
+            </span>
+          </button>
 
           <div class="song-block">
             <h1 class="song-title" id="song-title">—</h1>
@@ -366,7 +386,7 @@
         </div>
 
         <div id="gifter-share" class="share-row">
-          <button class="share-btn primary" id="send-btn">Send to <span id="send-recipient">Theo</span></button>
+          <button class="share-btn primary" id="send-btn">lock in this version</button>
           <button class="share-btn" id="copy-btn">Copy link</button>
         </div>
         <p id="gifter-warning" class="send-warning"><strong>This choice is final.</strong> The other version won't be part of the gift.</p>
@@ -490,7 +510,7 @@ window.__SLUG__ = "%%SLUG%%";
     document.getElementById("pill-a-label").textContent = (order.genreA || "version a");
     document.getElementById("send-confirm-version").textContent = (genreFor(currentVersion) || "this version");
     document.getElementById("pill-b-label").textContent = (order.genreB || "version b");
-    document.getElementById("send-recipient").textContent = sendTo;
+    var sr = document.getElementById("send-recipient"); if (sr) sr.textContent = sendTo;
     document.getElementById("note-recipient").textContent = sendTo;
     document.getElementById("card-recipient").textContent = sendTo;
     document.getElementById("card-text").textContent = order.note || "";
@@ -624,29 +644,61 @@ window.__SLUG__ = "%%SLUG%%";
         // card, Share button). This avoids the iOS in-place-flip scroll/repaint issues
         // entirely. Native auto-share doesn't fire post-fetch on iOS anyway; the recipient
         // view's Share button is a fresh user gesture and works on every device.
-        window.location.reload();
+        // The write has landed (or was already locked). Reload to the server-rendered
+        // locked recipient view with a gifter-only ?sent=1 flag, which triggers the
+        // "locked in — now send the link" confirmation cue. (Theo's bare link has no flag.)
+        var nu = new URL(window.location.href);
+        nu.searchParams.set("sent", "1");
+        window.location.replace(nu.toString());
       }).catch(function () {
         // Only a genuine network failure or rejected write reaches here.
         sendBtn.disabled = false;
-        sendBtn.innerHTML = 'Send to <span id="send-recipient">' + escapeHtml(order.sendTo || "them") + '</span>';
+        sendBtn.textContent = "lock in this version";
         alert("Something went wrong sending your gift. Please try again.");
       });
     });
   }
 
+  function shareUrl() {
+    // Always hand out the clean slug URL — strip ?sent=1 so the recipient never sees gifter cues.
+    var u = new URL(window.location.href);
+    u.search = "";
+    return u.toString();
+  }
   function doShare() {
-    var url = window.location.href;
+    var url = shareUrl();
     var shareData = { title: "still trill", text: "I made you something.", url: url };
     if (navigator.share) { navigator.share(shareData).catch(function () {}); }
     else { copyLink(); }
   }
   function copyLink() {
-    var url = window.location.href;
+    var url = shareUrl();
     if (navigator.clipboard) { navigator.clipboard.writeText(url); }
   }
   document.getElementById("copy-btn").addEventListener("click", copyLink);
   document.getElementById("recipient-share-btn").addEventListener("click", doShare);
   document.getElementById("recipient-copy-btn").addEventListener("click", copyLink);
+
+  // Gifter post-lock confirmation: only when they just locked (?sent=1) on a locked record.
+  (function () {
+    var justSent = /[?&]sent=1(&|$)/.test(window.location.search);
+    if (!justSent || currentView !== "recipient") return;
+    var name = (order.sendTo || "them");
+    var nameEl = document.getElementById("lock-confirm-name");
+    if (nameEl) nameEl.textContent = name.toLowerCase();
+    var cue = document.getElementById("lock-confirm");
+    if (cue) {
+      cue.classList.remove("hidden");
+      cue.addEventListener("click", function () {
+        var sc = document.querySelector(".page-scroll");
+        var target = document.getElementById("recipient-share");
+        if (sc && target) sc.scrollTo({ top: target.offsetTop - 24, behavior: "smooth" });
+      });
+    }
+    // The recipient view's Share button is the actual delivery action here.
+    var rsb = document.getElementById("recipient-share-btn");
+    if (rsb) rsb.textContent = "Send to " + name;
+  })();
 
   update();
   applyView();
