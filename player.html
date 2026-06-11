@@ -628,6 +628,17 @@ window.__SLUG__ = "%%SLUG%%";
           currentVersion = versionUpper === "B" ? "b" : "a";
           update();
           applyView();
+          // After the in-place flip, land the recipient at the very top (cover + title),
+          // and force iOS Safari to repaint the freshly-built lyrics — which otherwise
+          // stay blank until a manual scroll because the flip happens in a scrolled container.
+          var sc = document.querySelector(".page-scroll");
+          if (sc) {
+            requestAnimationFrame(function () {
+              sc.scrollTop = 0;
+              var ly = document.getElementById("lyrics-content");
+              if (ly) { ly.style.opacity = "0.999"; requestAnimationFrame(function () { ly.style.opacity = ""; }); }
+            });
+          }
         } catch (uiErr) {
           // Write succeeded; if a render line throws, reload into the locked recipient view.
           window.location.reload();
