@@ -617,17 +617,27 @@ window.__SLUG__ = "%%SLUG%%";
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug: window.__SLUG__, version: versionUpper, note: note })
       }).then(function (r) {
-        if (!r.ok) throw new Error("send_failed");
-        return r.json();
-      }).then(function () {
-        order.note = note;
-        order.chosenVersion = versionUpper;
-        currentView = "recipient";
-        currentVersion = versionUpper === "B" ? "b" : "a";
-        update();
-        applyView();
-        doShare();
+        // 409 = the gift was already sent/locked — that's a success state, not an error.
+        if (!r.ok && r.status !== 409) throw new Error("send_failed");
+        // Past this point the write has landed (or was already locked). Nothing below
+        // may surface a failure alert — flipping the view and sharing are best-effort.
+        try {
+          order.note = note;
+          order.chosenVersion = versionUpper;
+          currentView = "recipient";
+          currentVersion = versionUpper === "B" ? "b" : "a";
+          update();
+          applyView();
+        } catch (uiErr) {
+          // Write succeeded; if a render line throws, reload into the locked recipient view.
+          window.location.reload();
+          return;
+        }
+        // doShare() can throw synchronously on iOS when the tap's activation has expired
+        // after the network round-trip — isolate it so it can never error the send.
+        try { doShare(); } catch (shareErr) {}
       }).catch(function () {
+        // Only a genuine network failure or rejected write reaches here.
         sendBtn.disabled = false;
         sendBtn.innerHTML = 'Send to <span id="send-recipient">' + escapeHtml(order.sendTo || "them") + '</span>';
         alert("Something went wrong sending your gift. Please try again.");
